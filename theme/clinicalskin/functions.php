@@ -566,37 +566,71 @@ function cs_campos_checkout( $campos ) {
 
 /* ==================== Descuento de la rutina (pack -10%) ==================== */
 
-/** Cuántos productos distintos hay en el carrito. */
-function cs_productos_distintos( $carrito ) {
-	$ids = array();
-	foreach ( $carrito->get_cart() as $item ) {
-		if ( ! empty( $item['product_id'] ) ) {
-			$ids[] = (int) $item['product_id'];
-		}
+/*
+ * El diseño estático resta 10% cuando el carrito tiene la rutina completa
+ * ("Pack rutina completa": js/compra.js y el total de js/resultado-pro.js).
+ * Aquí ese 10% es el cupón "rutina", pero solo para lo que viene del
+ * diagnóstico: el puente (theme/js/puente-diagnostico.js) avisa con
+ * wc-ajax=cs_rutina qué ids trae la rutina y eso queda en la sesión; el
+ * cupón se aplica y se quita solo según cuántos de esos ids siguen en la
+ * bolsa, así dos productos sueltos de la tienda no tienen descuento.
+ */
+
+/** Ids de la rutina que vinieron del diagnóstico (sesión de la bolsa). */
+function cs_ids_rutina() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+		return array();
 	}
-	return count( array_unique( $ids ) );
+	$ids = WC()->session->get( 'cs_rutina_ids' );
+	return is_array( $ids ) ? array_map( 'intval', $ids ) : array();
 }
 
-/*
- * El diseño estático resta 10% cuando el carrito tiene 2 o más productos
- * ("Pack rutina completa": js/compra.js para el carrito y js/resultado-pro.js
- * para el total que muestra el diagnóstico). Aquí ese 10% es el cupón
- * "rutina", que se aplica y se quita solo según esa misma regla, para que el
- * total del carrito y del checkout coincidan con el del resultado.
- */
+/** Cuántos de esos ids están hoy en el carrito. */
+function cs_rutina_en_carrito( $carrito ) {
+	$ids    = cs_ids_rutina();
+	$dentro = 0;
+	foreach ( $carrito->get_cart() as $item ) {
+		if ( ! empty( $item['product_id'] ) && in_array( (int) $item['product_id'], $ids, true ) ) {
+			++$dentro;
+		}
+	}
+	return $dentro;
+}
+
+/* El puente guarda en la sesión los ids que trae la rutina del resultado. */
+add_action(
+	'wc_ajax_cs_rutina',
+	function () {
+		$ids    = isset( $_POST['ids'] ) ? array_filter( array_map( 'intval', explode( ',', sanitize_text_field( wp_unslash( $_POST['ids'] ) ) ) ) ) : array();
+		$guardo = false;
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			WC()->session->set( 'cs_rutina_ids', array_values( $ids ) );
+			$guardo = true;
+		}
+		wp_send_json( array( 'ok' => $guardo, 'ids' => array_values( $ids ) ) );
+	}
+);
+
 add_action(
 	'woocommerce_before_calculate_totals',
 	function ( $carrito ) {
 		static $corriendo = false;
-		if ( $corriendo || ! function_exists( 'WC' ) || ! $carrito instanceof WC_Cart || $carrito->is_empty() ) {
+		if ( $corriendo || ! function_exists( 'WC' ) || ! $carrito instanceof WC_Cart ) {
 			return;
 		}
-		$corriendo = true;
-		$aplicado  = in_array( 'rutina', array_map( 'strtolower', $carrito->get_applied_coupons() ), true );
-		$distintos = cs_productos_distintos( $carrito );
-		if ( $distintos >= 2 && ! $aplicado ) {
+		/* Bolsa vacía: se olvida la rutina, para que la próxima compra arranque en cero. */
+		if ( $carrito->is_empty() ) {
+			if ( WC()->session ) {
+				WC()->session->set( 'cs_rutina_ids', array() );
+			}
+			return;
+		}
+		$corriendo  = true;
+		$aplicado   = in_array( 'rutina', array_map( 'strtolower', $carrito->get_applied_coupons() ), true );
+		$deLaRutina = cs_rutina_en_carrito( $carrito );
+		if ( $deLaRutina >= 2 && ! $aplicado ) {
 			$carrito->apply_coupon( 'rutina' );
-		} elseif ( $distintos < 2 && $aplicado ) {
+		} elseif ( $deLaRutina < 2 && $aplicado ) {
 			$carrito->remove_coupon( 'rutina' );
 		}
 		$corriendo = false;
@@ -605,12 +639,12 @@ add_action(
 	1
 );
 
-/* Escrito a mano, el código solo sirve con 2 o más productos en la bolsa. */
+/* Escrito a mano, el código solo sirve con la rutina del diagnóstico (2 o más). */
 add_filter(
 	'woocommerce_coupon_is_valid',
 	function ( $valido, $cupon, $descuentos ) {
 		if ( $valido && 'rutina' === strtolower( $cupon->get_code() ) && function_exists( 'WC' ) && WC()->cart ) {
-			$valido = cs_productos_distintos( WC()->cart ) >= 2;
+			$valido = cs_rutina_en_carrito( WC()->cart ) >= 2;
 		}
 		return $valido;
 	},

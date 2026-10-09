@@ -112,6 +112,22 @@
         } catch (e) {
           /* modo privado */
         }
+
+        /* Avisa al final qué ids trae la rutina: el 10% del pack solo aplica
+           a lo que viene del diagnóstico (functions.php). Va después de las
+           altas porque la sesión se escribe al cerrar cada petición y, si se
+           manda antes, alguna alta posterior la pisa y se pierde la marca;
+           la pausa es para que esa escritura exista antes de pedir /cart/. */
+        try {
+          await fetch('/?wc-ajax=cs_rutina', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: 'ids=' + ids.join(',')
+          });
+          await esperar(500);
+        } catch (e) { /* sin marca no hay descuento */ }
+
         location.href = datos.carrito;
       })();
     },
