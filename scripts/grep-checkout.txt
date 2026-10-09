@@ -1,0 +1,4 @@
+wp-content/plugins/woocommerce/includes/class-wc-checkout.php:310:		$this->fields = apply_filters( 'woocommerce_checkout_fields', $this->fields );
+wp-content/plugins/woocommerce/includes/class-wc-checkout.php:866:	 * including those registered through the 'woocommerce_checkout_fields' filter, is validated without
+wp-content/plugins/woocommerce/includes/class-wc-cart.php:1857:				// Takes care of late unsetting of checkout fields via hooks (woocommerce_checkout_fields, woocommerce_shipping_fields).
+wp-content/plugins/woocommerce/includes/class-wc-cart.php:1872:				// Takes care of late unsetting of checkout fields via hooks (woocommerce_checkout_fields, woocommerce_shipping_fields).

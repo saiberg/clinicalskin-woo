@@ -1,0 +1,11 @@
+# Credenciales locales: nunca suben al repo.
+CREDENCIALES.md
+
+# Exportaciones y respaldos puntuales (wp db export, zips de migración).
+salida/
+*.sql
+*.zip
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,68 @@
+name: clinicalskin-woo
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_ROOT_PASSWORD: clinicalskin_root
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wp_clinical
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uwp", "-pwp_clinical"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    image: wordpress:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp_clinical
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes:
+      - wp_data:/var/www/html
+      # tema puente (template files, en el host)
+      - ./theme/clinicalskin:/var/www/html/wp-content/themes/clinicalskin
+      # sitio estático: .html para que el tema los lea, y assets en la raíz
+      - 'C:/xampp/htdocs/clinicalskin:/var/www/html/static'
+      - 'C:/xampp/htdocs/clinicalskin/img:/var/www/html/img'
+      - 'C:/xampp/htdocs/clinicalskin/css:/var/www/html/css'
+      - 'C:/xampp/htdocs/clinicalskin/js:/var/www/html/js'
+
+  cli:
+    image: wordpress:cli
+    # www-data de la imagen apache es uid 33; la de cli (alpine) es 82.
+    # Se fija en 33 para poder escribir en el volumen wp_data.
+    user: "33:33"
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp_clinical
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp_data:/var/www/html
+      - ./theme/clinicalskin:/var/www/html/wp-content/themes/clinicalskin
+      - 'C:/xampp/htdocs/clinicalskin:/var/www/html/static'
+      # scripts de mantenimiento del stack (no forman parte del sitio)
+      - './scripts:/tmp/cs'
+
+volumes:
+  db_data:
+  wp_data:

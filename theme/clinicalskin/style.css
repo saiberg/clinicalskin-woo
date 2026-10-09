@@ -1,0 +1,9 @@
+/*
+Theme Name: Clinical Skin
+Description: Puente del sitio estático Clinical Skin hacia WordPress + WooCommerce. Las páginas se sirven desde el HTML original (carpeta /static, montada en el contenedor); el CSS real vive en /css/style.css.
+Version: 1.0
+Requires PHP: 8.0
+*/
+
+/* Este archivo solo existe para que WordPress reconozca el tema.
+   El CSS del sitio se enlaza desde header.php (/css/style.css). */
