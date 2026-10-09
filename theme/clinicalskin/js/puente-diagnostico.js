@@ -25,10 +25,51 @@
   const datos = window.__csDiagnosticoWoo;
   if (!datos || !datos.productos || !datos.carrito) return;
 
+  const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
+
   const nombresDeLaRutina = () => {
     const nuevo = document.querySelectorAll('.rp-card:not(.off) h3');
     const fuente = nuevo.length ? nuevo : document.querySelectorAll('.routine-block .products-grid h3');
     return Array.from(fuente).map((h) => h.textContent.trim());
+  };
+
+  /* id → nombre del catálogo, para comparar con lo que devuelve la bolsa */
+  const nombreDe = {};
+  Object.keys(datos.productos).forEach((n) => {
+    nombreDe[datos.productos[n]] = n;
+  });
+
+  const alta = async (id) => {
+    try {
+      await fetch('/?wc-ajax=add_to_cart', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: 'product_id=' + id + '&quantity=1'
+      });
+    } catch (e) {
+      /* sin red: lo retoma la ronda de revisión */
+    }
+  };
+
+  /* La sesión de WooCommerce se escribe al terminar cada petición: si la
+     siguiente empieza antes, pisa el carrito y se pierde un producto
+     (afloraba de forma aleatoria, uno distinto por intento). Por eso hay
+     pausa entre altas y una revisión final que vuelve a pedir los que
+     falten. */
+  const nombresEnBolsa = async () => {
+    try {
+      const r = await fetch('/?wc-ajax=get_refreshed_fragments', { credentials: 'same-origin' });
+      const j = await r.json();
+      const html = j.fragments ? j.fragments['div.widget_shopping_cart_content'] : '';
+      if (!html) return null;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return Array.from(doc.querySelectorAll('.mini_cart_item a'))
+        .filter((a) => !a.classList.contains('remove'))
+        .map((a) => a.textContent.trim());
+    } catch (e) {
+      return null;
+    }
   };
 
   document.addEventListener(
@@ -51,21 +92,20 @@
 
       btn.textContent = 'Añadiendo a tu bolsa…';
 
-      /* wc-ajax=add_to_cart solo responde con POST (en GET devuelve vacío):
-         los productos se añaden uno a uno; la sesión viaja en la cookie, así
-         que basta con esperar cada respuesta antes de navegar. */
       (async () => {
-        for (const id of ids) {
-          try {
-            await fetch('/?wc-ajax=add_to_cart', {
-              method: 'POST',
-              credentials: 'same-origin',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-              body: 'product_id=' + id + '&quantity=1'
-            });
-          } catch (e) {
-            /* sin red: se sigue con el resto; el carrito muestra lo que haya */
+        let pendientes = ids;
+        for (let ronda = 0; ronda < 3 && pendientes.length; ronda++) {
+          for (const id of pendientes) {
+            await alta(id);
+            await esperar(300);
           }
+          const enBolsa = await nombresEnBolsa();
+          if (!enBolsa) break;
+          pendientes = pendientes.filter((id) => {
+            const nombre = nombreDe[id];
+            /* sin nombre comparable no se vuelve a añadir (evita duplicar) */
+            return nombre ? enBolsa.indexOf(nombre) === -1 : false;
+          });
         }
         try {
           localStorage.removeItem('cs_cart');
