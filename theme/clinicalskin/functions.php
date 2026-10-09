@@ -563,3 +563,83 @@ function cs_campos_checkout( $campos ) {
 
 	return $campos;
 }
+
+/* ==================== Descuento de la rutina (pack -10%) ==================== */
+
+/** Cuántos productos distintos hay en el carrito. */
+function cs_productos_distintos( $carrito ) {
+	$ids = array();
+	foreach ( $carrito->get_cart() as $item ) {
+		if ( ! empty( $item['product_id'] ) ) {
+			$ids[] = (int) $item['product_id'];
+		}
+	}
+	return count( array_unique( $ids ) );
+}
+
+/*
+ * El diseño estático resta 10% cuando el carrito tiene 2 o más productos
+ * ("Pack rutina completa": js/compra.js para el carrito y js/resultado-pro.js
+ * para el total que muestra el diagnóstico). Aquí ese 10% es el cupón
+ * "rutina", que se aplica y se quita solo según esa misma regla, para que el
+ * total del carrito y del checkout coincidan con el del resultado.
+ */
+add_action(
+	'woocommerce_before_calculate_totals',
+	function ( $carrito ) {
+		static $corriendo = false;
+		if ( $corriendo || ! function_exists( 'WC' ) || ! $carrito instanceof WC_Cart || $carrito->is_empty() ) {
+			return;
+		}
+		$corriendo = true;
+		$aplicado  = in_array( 'rutina', array_map( 'strtolower', $carrito->get_applied_coupons() ), true );
+		$distintos = cs_productos_distintos( $carrito );
+		if ( $distintos >= 2 && ! $aplicado ) {
+			$carrito->apply_coupon( 'rutina' );
+		} elseif ( $distintos < 2 && $aplicado ) {
+			$carrito->remove_coupon( 'rutina' );
+		}
+		$corriendo = false;
+	},
+	20,
+	1
+);
+
+/* Escrito a mano, el código solo sirve con 2 o más productos en la bolsa. */
+add_filter(
+	'woocommerce_coupon_is_valid',
+	function ( $valido, $cupon, $descuentos ) {
+		if ( $valido && 'rutina' === strtolower( $cupon->get_code() ) && function_exists( 'WC' ) && WC()->cart ) {
+			$valido = cs_productos_distintos( WC()->cart ) >= 2;
+		}
+		return $valido;
+	},
+	10,
+	3
+);
+
+/* La fila del descuento se llama como en checkout.html y no trae "Eliminar":
+   el descuento es del pack, no de un cupón que el usuario haya escrito. */
+add_filter(
+	'woocommerce_cart_totals_coupon_label',
+	function ( $etiqueta, $cupon ) {
+		if ( 'rutina' === strtolower( $cupon->get_code() ) ) {
+			return 'Pack rutina completa (-10%)';
+		}
+		return $etiqueta;
+	},
+	10,
+	2
+);
+
+add_filter(
+	'woocommerce_cart_totals_coupon_html',
+	function ( $html, $cupon ) {
+		if ( 'rutina' === strtolower( $cupon->get_code() ) ) {
+			return preg_replace( '/<a[^>]*woocommerce-remove-coupon[^>]*>.*?<\/a>/', '', $html );
+		}
+		return $html;
+	},
+	10,
+	2
+);
