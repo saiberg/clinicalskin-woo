@@ -60,6 +60,9 @@ services:
       - wp_data:/var/www/html
       - ./theme/clinicalskin:/var/www/html/wp-content/themes/clinicalskin
       - 'C:/xampp/htdocs/clinicalskin:/var/www/html/static'
+      - 'C:/xampp/htdocs/clinicalskin/img:/var/www/html/img'
+      - 'C:/xampp/htdocs/clinicalskin/css:/var/www/html/css'
+      - 'C:/xampp/htdocs/clinicalskin/js:/var/www/html/js'
       # scripts de mantenimiento del stack (no forman parte del sitio)
       - './scripts:/tmp/cs'
 

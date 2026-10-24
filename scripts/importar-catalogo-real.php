@@ -173,7 +173,22 @@ if ( ! $mano ) {
 	exit( 1 );
 }
 
-$cab = fgetcsv( $mano, 0, ';', '"', '' );
+/* El encabezado puede venir tras filas vacias: se salta todo lo que este en blanco. */
+$cab = false;
+while ( false !== ( $linea = fgetcsv( $mano, 0, ';', '"', '' ) ) ) {
+	$vacia = true;
+	foreach ( $linea as $celda ) {
+		$celda = preg_replace( '/^\xEF\xBB\xBF/', '', (string) $celda );
+		if ( '' !== trim( $celda ) ) {
+			$vacia = false;
+			break;
+		}
+	}
+	if ( ! $vacia ) {
+		$cab = $linea;
+		break;
+	}
+}
 if ( ! is_array( $cab ) ) {
 	echo "ERROR: CSV vacio\n";
 	exit( 1 );
