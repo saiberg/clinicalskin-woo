@@ -13,7 +13,8 @@ $p = cs_piezas();
 <base href="<?php echo esc_url( home_url( '/' ) ); ?>">
 <title><?php echo $p['titulo'] ? $p['titulo'] : esc_html( wp_get_document_title() ); ?></title>
 <?php wp_head(); ?>
-<link rel="stylesheet" href="css/style.css">
+<?php $ver_css_diseno = @filemtime( ABSPATH . 'css/style.css' ) ?: (int) filemtime( __FILE__ ); ?>
+<link rel="stylesheet" href="css/style.css?ver=<?php echo (int) $ver_css_diseno; ?>">
 <link rel="stylesheet" href="<?php echo esc_url( add_query_arg( 'ver', (int) filemtime( get_theme_file_path( 'css/woo.css' ) ), get_theme_file_uri( 'css/woo.css' ) ) ); ?>">
 <?php if ( $p['head'] ) : ?>
 <?php echo $p['head']; ?>
