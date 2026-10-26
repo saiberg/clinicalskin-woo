@@ -723,6 +723,8 @@
 .filters-panel .cs-category-group { margin-bottom: 17px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
 .filters-panel .cs-category-group:last-of-type { margin-bottom: 20px; }
 .filters-panel .cs-category-group .widgettitle { margin-bottom: 10px; }
+.filters-panel .cs-clear-category { display: flex; align-items: center; gap: 8px; margin: 0 0 17px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 5px; background: #fffdfa; color: #805a3b; font-size: .82rem; font-weight: 600; }
+.filters-panel .cs-clear-category:hover { border-color: #c39b74; background: #f7eee5; color: #65472f; }
 .filters-panel ul,
 .filters-panel .wc-layered-nav-list { list-style: none; margin: 0; padding: 0; }
 .filters-panel li { margin: 0; }

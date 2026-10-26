@@ -234,6 +234,9 @@ function cs_catalogo_grupos_categorias() {
 function cs_catalogo_cerrar() {
 	echo '</div>';
 	echo '<aside class="filters-panel">';
+	if ( function_exists( 'is_product_category' ) && ( is_product_category() || is_product_tag() || is_product_taxonomy() ) ) {
+		echo '<a class="cs-clear-category" href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '"><span aria-hidden="true">←</span> Ver todos los productos</a>';
+	}
 	if ( is_active_sidebar( 'catalogo-filtros' ) ) {
 		ob_start();
 		dynamic_sidebar( 'catalogo-filtros' );
