@@ -181,6 +181,47 @@ function cs_catalogo_abrir() {
 	<?php
 }
 
+/** Imprime los mismos términos de producto, separados visualmente por marca y tipo. */
+function cs_catalogo_grupos_categorias() {
+	$terminos = get_terms(
+		array(
+			'taxonomy'   => 'product_cat',
+			'hide_empty' => true,
+			'orderby'    => 'name',
+			'order'      => 'ASC',
+		)
+	);
+	if ( is_wp_error( $terminos ) || ! $terminos ) {
+		return '';
+	}
+
+	$marcas = array( 'avene', 'eucerin', 'isdin', 'lrp', 'uriage', 'vichy' );
+	$grupos = array( 'Marcas' => array(), 'Tipos de producto' => array() );
+	foreach ( $terminos as $termino ) {
+		$grupo = in_array( $termino->slug, $marcas, true ) ? 'Marcas' : 'Tipos de producto';
+		$grupos[ $grupo ][] = $termino;
+	}
+
+	$actual_id = (int) get_queried_object_id();
+	$html      = '';
+	foreach ( $grupos as $titulo => $items ) {
+		if ( ! $items ) {
+			continue;
+		}
+		$html .= '<div class="filter-group cs-category-group"><h2 class="widgettitle">' . esc_html( $titulo ) . '</h2><ul class="product-categories cs-filter-terms">';
+		foreach ( $items as $termino ) {
+			$url = get_term_link( $termino );
+			if ( is_wp_error( $url ) ) {
+				continue;
+			}
+			$activo = $actual_id === (int) $termino->term_id;
+			$html  .= '<li class="cat-item cat-item-' . (int) $termino->term_id . ( $activo ? ' chosen current-cat' : '' ) . '"><a href="' . esc_url( $url ) . '"' . ( $activo ? ' aria-current="page"' : '' ) . '>' . esc_html( $termino->name ) . '</a><span class="count">(' . (int) $termino->count . ')</span></li>';
+		}
+		$html .= '</ul></div>';
+	}
+	return $html;
+}
+
 /**
  * Cierra el listado y agrega el panel de filtros.
  *
@@ -196,7 +237,19 @@ function cs_catalogo_cerrar() {
 	if ( is_active_sidebar( 'catalogo-filtros' ) ) {
 		ob_start();
 		dynamic_sidebar( 'catalogo-filtros' );
-		echo cs_filtros_ayuda_precio( ob_get_clean() );
+		$widgets = ob_get_clean();
+		/* La lista plana del widget se sustituye por los mismos términos en dos
+		   grupos semánticos; el widget de precio y su comportamiento se conservan. */
+		$widgets = preg_replace(
+			'~<div class="filter-group">\s*<h2[^>]*>\s*Categoría\s*</h2>\s*<ul class="product-categories">.*?</ul>\s*</div>\s*~su',
+			'',
+			$widgets,
+			1
+		);
+		echo cs_catalogo_grupos_categorias();
+		echo cs_filtros_ayuda_precio( $widgets );
+	} else {
+		echo cs_catalogo_grupos_categorias();
 	}
 	echo '</aside>';
 	echo '</div></div>';

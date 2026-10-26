@@ -720,6 +720,9 @@
   color: var(--color-text);
   margin-bottom: 14px;
 }
+.filters-panel .cs-category-group { margin-bottom: 17px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
+.filters-panel .cs-category-group:last-of-type { margin-bottom: 20px; }
+.filters-panel .cs-category-group .widgettitle { margin-bottom: 10px; }
 .filters-panel ul,
 .filters-panel .wc-layered-nav-list { list-style: none; margin: 0; padding: 0; }
 .filters-panel li { margin: 0; }
@@ -825,6 +828,11 @@
   outline: none;
   box-shadow: 0 0 0 3px rgba(158, 100, 80, 0.14);
 }
+
+/* El widget de WooCommerce aplica bordes encadenados como tabla; conserva solo
+   las píldoras redondeadas que define el tema. */
+.woocommerce .woocommerce-pagination ul.page-numbers { border: 0; margin: 44px 0 0; background: transparent; }
+.woocommerce .woocommerce-pagination ul.page-numbers li { float: none; overflow: visible; border: 0; }
 
 /* ---------- Filtro de precio: orden y uso ---------- */
 /* El widget imprime el botón ANTES que la etiqueta de rango, así que en el
