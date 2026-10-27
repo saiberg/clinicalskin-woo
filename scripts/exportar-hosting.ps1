@@ -1,5 +1,5 @@
 param(
-	[string]$Dominio = 'https://clinicalskin.cl'
+	[string]$Dominio = 'https://www.clinicalskin.cl'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,7 +12,7 @@ $Tar     = Join-Path $Salida 'site.tar.gz'
 $Dominio = $Dominio.TrimEnd('/')
 
 if ( $Dominio -notmatch '^https://' ) {
-	throw 'Usa el dominio final con HTTPS, por ejemplo https://clinicalskin.cl'
+	throw 'Usa el dominio final con HTTPS, por ejemplo https://www.clinicalskin.cl'
 }
 
 New-Item -ItemType Directory -Force $Salida | Out-Null
@@ -33,7 +33,7 @@ rm -rf /tmp/cs-export
 cp -a /var/www/html /tmp/cs-export
 rm -rf /tmp/cs-export/static/.git /tmp/cs-export/static/woocommerce /tmp/cs-export/static/docs/woocommerce
 find /tmp/cs-export/static -type f -name '*.md' -delete
-find /tmp/cs-export/static -type f -name '*.html' -exec sed -i 's|http://localhost:8080|$Dominio|g;s|http://localhost/clinicalskin|$Dominio|g' {} +
+find /tmp/cs-export/static -type f -name '*.html' -exec sed -i 's|http://localhost:8080|$Dominio|g;s|http://localhost/clinicalskin|$Dominio|g;s|https://clinicalskin.cl|$Dominio|g' {} +
 find /tmp/cs-export -type d -exec chmod 755 {} +
 find /tmp/cs-export -type f -exec chmod 644 {} +
 tar -czf /tmp/site.tar.gz -C /tmp/cs-export .
