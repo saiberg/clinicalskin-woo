@@ -482,6 +482,24 @@ add_action(
 	}
 );
 
+/* Feedback inmediato del botón nativo de WooCommerce en la ficha. */
+add_action(
+	'wp_enqueue_scripts',
+	function () {
+		if ( ! function_exists( 'is_product' ) || ! is_product() ) {
+			return;
+		}
+		$archivo = 'js/feedback-carrito.js';
+		wp_enqueue_script(
+			'cs-feedback-carrito',
+			get_theme_file_uri( $archivo ),
+			array(),
+			(int) filemtime( get_theme_file_path( $archivo ) ),
+			true
+		);
+	}
+);
+
 /*
  * "Añadir rutina completa" (resultado.html) apuntaba al carrito estático
  * (localStorage + carrito.html): aquí se reutiliza ese botón para meter los

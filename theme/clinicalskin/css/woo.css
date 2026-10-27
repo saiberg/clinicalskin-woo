@@ -272,6 +272,13 @@
   .woocommerce div.product .woocommerce-tabs ul.tabs { gap: 14px; }
 }
 
+/* Estado visible mientras WooCommerce añade el producto desde su ficha. */
+.woocommerce button.single_add_to_cart_button.cs-add-to-cart-loading { gap: 10px; cursor: wait; opacity: .92; transform: none; box-shadow: 0 7px 18px rgba(125,87,52,.18); }
+.woocommerce button.single_add_to_cart_button.cs-add-to-cart-loading:hover { transform: none; }
+.cs-cart-spinner { display: inline-block; width: 17px; height: 17px; flex: 0 0 17px; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; animation: cs-cart-spin .7s linear infinite; }
+@keyframes cs-cart-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cs-cart-spinner { animation-duration: 1.8s; } }
+
 /* Paginación */
 .woocommerce .woocommerce-pagination ul.page-numbers {
   display: flex;
