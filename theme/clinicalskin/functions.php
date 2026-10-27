@@ -761,6 +761,12 @@ add_filter(
 		return home_url( '/img/logo-email.jpg' );
 	}
 );
+add_filter(
+	'option_woocommerce_email_header_alignment',
+	function ( $alineacion ) {
+		return 'center';
+	}
+);
 
 /* El footer del email conserva acciones de contacto reales, sin formulario ficticio. */
 add_filter(
@@ -785,17 +791,27 @@ add_filter(
 			#template_container { border: 1px solid #eadfd3 !important; border-radius: 8px !important; background: #fffdfa !important; }
 			#template_header { background: #fffdfa !important; border-bottom: 1px solid #eee4d9 !important; }
 			#template_header_image { padding: 22px 28px 8px !important; text-align: center !important; }
-			#template_header_image img { display: inline-block !important; width: 210px !important; max-width: 72% !important; height: auto !important; }
+			#template_header_image p { margin: 0 !important; text-align: center !important; }
+			#template_header_image a { display: inline-block !important; text-align: center !important; }
+			#template_header_image img { display: block !important; width: 230px !important; max-width: 82% !important; height: auto !important; margin: 0 auto !important; }
 			#header_wrapper { padding: 14px 30px 22px !important; }
-			#header_wrapper h1 { color: #553c2d !important; font-family: Georgia, serif !important; font-size: 25px !important; font-weight: 500 !important; line-height: 1.3 !important; }
+			#header_wrapper h1 { color: #553c2d !important; font-family: Georgia, serif !important; font-size: 25px !important; font-weight: 500 !important; line-height: 1.3 !important; text-align: center !important; }
 			#body_content { background: #fffdfa !important; }
 			#body_content table td { padding: 20px 30px !important; }
 			#body_content_inner { color: #5f5349 !important; font-family: Arial, sans-serif !important; font-size: 15px !important; line-height: 1.65 !important; }
 			#body_content_inner h2, #body_content_inner h3 { color: #553c2d !important; font-family: Georgia, serif !important; }
 			#body_content_inner h2 { font-size: 20px !important; }
 			#body_content_inner a { color: #945f3d !important; }
-			.td { border: 0 !important; border-bottom: 1px solid #eee4d9 !important; color: #5b4d41 !important; }
-			th.td { background: #f6eee5 !important; color: #543d2e !important; }
+			#body_content_inner table.email-order-details { border: 1px solid #eadfd3 !important; border-collapse: separate !important; border-spacing: 0 !important; border-radius: 6px !important; overflow: hidden !important; }
+			#body_content_inner table.email-order-details .td { border: 0 !important; border-bottom: 1px solid #eee4d9 !important; color: #5b4d41 !important; background: #fffdfa !important; }
+			#body_content_inner table.email-order-details thead th.td { background: #f5ece2 !important; color: #543d2e !important; font-size: 12px !important; letter-spacing: .04em !important; text-transform: uppercase !important; }
+			#body_content_inner table.email-order-details tr.order-totals th.td,
+			#body_content_inner table.email-order-details tr.order-totals td.td { background: #fcf8f3 !important; }
+			#body_content_inner table.email-order-details tr.order-totals-last th.td,
+			#body_content_inner table.email-order-details tr.order-totals-last td.td { background: #f3e7da !important; color: #4f392b !important; font-weight: 700 !important; }
+			#body_content_inner .email-order-item-thumbnail img { width: 56px !important; height: 56px !important; object-fit: cover !important; border-radius: 6px !important; }
+			#body_content_inner .email-order-item-meta { color: #76675b !important; font-size: 12px !important; }
+			hr { border-top-color: #eadfd3 !important; opacity: .65 !important; }
 			#template_footer { border-top: 1px solid #eadfd3 !important; background: #f6f0e9 !important; }
 			#credit { color: #78695d !important; text-align: center !important; font-size: 12px !important; line-height: 1.6 !important; }
 			#credit a { color: #895b3b !important; }
