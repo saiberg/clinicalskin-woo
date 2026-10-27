@@ -733,3 +733,58 @@ add_filter(
 	10,
 	2
 );
+
+/* ==================== Correos transaccionales con la marca ==================== */
+
+/* El logo pequeño y horizontal evita cargar el PNG grande en cada correo. */
+add_filter(
+	'option_woocommerce_email_header_image',
+	function ( $imagen ) {
+		return home_url( '/img/logo-email.jpg' );
+	}
+);
+
+/* El footer del email conserva acciones de contacto reales, sin formulario ficticio. */
+add_filter(
+	'woocommerce_email_footer_text',
+	function ( $texto ) {
+		$correo   = 'contacto@clinicalskin.cl';
+		$whatsapp = 'https://wa.me/56992412354';
+		return '<p>Gracias por elegir Clinical Skin. Estamos para acompañarte.</p>' .
+			'<p><a href="mailto:' . esc_attr( $correo ) . '">' . esc_html( $correo ) . '</a> · ' .
+			'<a href="' . esc_url( $whatsapp ) . '">Asesoría por WhatsApp</a></p>' .
+			'<p>Despacho a todo Chile · Pago seguro con Webpay</p>';
+	}
+);
+
+/* Colores, espaciado y tabla de pedido: solo presentación, Woo mantiene todos
+   los importes, productos, direcciones y acciones del mensaje original. */
+add_filter(
+	'woocommerce_email_styles',
+	function ( $css ) {
+		$css .= '
+			body, #outer_wrapper { background-color: #f5eee6 !important; color: #5b4d41 !important; }
+			#template_container { border: 1px solid #eadfd3 !important; border-radius: 8px !important; background: #fffdfa !important; }
+			#template_header { background: #fffdfa !important; border-bottom: 1px solid #eee4d9 !important; }
+			#template_header_image { padding: 22px 28px 8px !important; text-align: center !important; }
+			#template_header_image img { display: inline-block !important; width: 210px !important; max-width: 72% !important; height: auto !important; }
+			#header_wrapper { padding: 14px 30px 22px !important; }
+			#header_wrapper h1 { color: #553c2d !important; font-family: Georgia, serif !important; font-size: 25px !important; font-weight: 500 !important; line-height: 1.3 !important; }
+			#body_content { background: #fffdfa !important; }
+			#body_content table td { padding: 20px 30px !important; }
+			#body_content_inner { color: #5f5349 !important; font-family: Arial, sans-serif !important; font-size: 15px !important; line-height: 1.65 !important; }
+			#body_content_inner h2, #body_content_inner h3 { color: #553c2d !important; font-family: Georgia, serif !important; }
+			#body_content_inner h2 { font-size: 20px !important; }
+			#body_content_inner a { color: #945f3d !important; }
+			.td { border: 0 !important; border-bottom: 1px solid #eee4d9 !important; color: #5b4d41 !important; }
+			th.td { background: #f6eee5 !important; color: #543d2e !important; }
+			#template_footer { border-top: 1px solid #eadfd3 !important; background: #f6f0e9 !important; }
+			#credit { color: #78695d !important; text-align: center !important; font-size: 12px !important; line-height: 1.6 !important; }
+			#credit a { color: #895b3b !important; }
+			.button { background-color: #8b5d3c !important; border-radius: 4px !important; color: #fffdfa !important; }
+		';
+		return $css;
+	},
+	20,
+	1
+);
