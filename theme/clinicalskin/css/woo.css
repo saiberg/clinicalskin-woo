@@ -1461,3 +1461,278 @@
   background: var(--color-bg-alt);
   font-size: 0.85rem;
 }
+
+/* Fondo floral/mármol solo en fichas de producto; las superficies claras
+   mantienen legibles la información y las descripciones. */
+body.cs-product-page,
+body.cs-cart-page,
+body.cs-shop-page,
+body.cs-checkout-page,
+body.cs-order-received-page,
+body.cs-contact-editorial-page,
+body.cs-philosophy-editorial-page,
+body.cs-diagnostic-page,
+body.cs-result-page,
+body.cs-legal-page {
+  background-color: #faf3eb;
+  background-image: url('/img/producto-fondo.jpg');
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+body.cs-product-page .woocommerce div.product .summary {
+  padding: 24px 26px;
+  border: 1px solid rgba(234, 223, 211, .82);
+  border-radius: 10px;
+  background: rgba(255, 253, 250, .84);
+  box-shadow: 0 12px 32px rgba(85, 60, 45, .08);
+}
+body.cs-product-page .woocommerce div.product .woocommerce-tabs .panel {
+  padding: 22px 24px;
+  border: 1px solid rgba(234, 223, 211, .75);
+  border-radius: 9px;
+  background: rgba(255, 253, 250, .82);
+}
+@media (max-width: 780px) {
+  body.cs-product-page .woocommerce div.product .summary { padding: 20px 17px; }
+  body.cs-product-page .woocommerce div.product .woocommerce-tabs .panel { padding: 18px 16px; }
+}
+
+/* Catálogo: misma base visual de la ficha, con una superficie ligera para
+   filtros y tarjetas sobre el mármol. */
+body.cs-shop-page main.container { padding-top: 32px; }
+body.cs-shop-page .page-header {
+  margin: 14px 0 20px;
+  padding: 38px 42px 32px;
+  border: 1px solid rgba(234, 223, 211, .8);
+  border-radius: 14px;
+  background: rgba(255, 253, 250, .74);
+  box-shadow: 0 10px 30px rgba(77, 58, 41, .06);
+  text-align: left;
+}
+body.cs-shop-page .page-header .eyebrow { justify-content: flex-start; }
+body.cs-shop-page .page-header p { max-width: 680px; margin: 12px 0 0; }
+body.cs-shop-page .tienda-catalogo {
+  padding: 24px;
+  border: 1px solid rgba(234, 223, 211, .82);
+  border-radius: 14px;
+  background: rgba(255, 253, 250, .76);
+  box-shadow: 0 12px 34px rgba(77, 58, 41, .07);
+}
+body.cs-shop-page .filters-panel {
+  border-color: #eadfd3;
+  border-radius: 11px;
+  background: rgba(255, 253, 250, .96);
+  box-shadow: 0 8px 22px rgba(77, 58, 41, .06);
+}
+body.cs-shop-page .catalog-main ul.products li.product {
+  border-color: #eadfd3;
+  border-radius: 10px;
+  background: #fffdfa;
+  box-shadow: 0 6px 18px rgba(77, 58, 41, .07);
+}
+body.cs-shop-page .catalog-main ul.products li.product:hover {
+  box-shadow: 0 14px 32px rgba(77, 58, 41, .12);
+}
+body.cs-shop-page .catalog-main ul.products li.product a.woocommerce-LoopProduct-link img {
+  background: #f5eee6;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  padding: 10px;
+}
+
+/* Checkout: fondo común y una composición más editorial para los bloques
+   de datos, pago y resumen, conservando intactos campos y flujos de Woo. */
+body.cs-checkout-page .page-header {
+  padding: 46px 0 24px;
+}
+body.cs-checkout-page .section-tight > .container {
+  padding-top: 30px;
+  padding-bottom: 30px;
+  border: 1px solid rgba(234, 223, 211, .8);
+  border-radius: 15px;
+  background: rgba(255, 253, 250, .68);
+  box-shadow: 0 12px 34px rgba(77, 58, 41, .07);
+}
+body.cs-checkout-page .checkout-steps { margin-bottom: 34px; }
+body.cs-checkout-page .checkout-steps .cs {
+  border-color: #eadfd3;
+  background: rgba(255, 253, 250, .94);
+  color: #79695d;
+}
+body.cs-checkout-page .checkout-steps .cs.active {
+  border-color: #a96849;
+  background: #f5e9df;
+  color: #633e2c;
+}
+body.cs-checkout-page .checkout-steps .cs.done .cs-num { background: #8b5d3c; }
+body.cs-checkout-page .form-card,
+body.cs-checkout-page .order-box {
+  border-color: #eadfd3;
+  border-radius: 14px;
+  background: rgba(255, 253, 250, .96);
+  box-shadow: 0 10px 28px rgba(77, 58, 41, .08);
+}
+body.cs-checkout-page .form-card h2,
+body.cs-checkout-page .order-box h3 {
+  color: #563d2f;
+  font-family: var(--font-heading);
+}
+body.cs-checkout-page .form-card .fc-sub { color: #78695d; }
+body.cs-checkout-page .woocommerce-checkout .form-row label { color: #654b3a; }
+body.cs-checkout-page .woocommerce-checkout .input-text,
+body.cs-checkout-page .woocommerce-checkout select,
+body.cs-checkout-page .woocommerce-checkout textarea,
+body.cs-checkout-page #customer_details .input-text,
+body.cs-checkout-page #customer_details select {
+  border-color: #e5d8ca;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+body.cs-checkout-page .order-box .summary-row.total {
+  border-top-color: #eadfd3;
+  color: #573b2d;
+}
+body.cs-checkout-page .order-box .summary-row.total strong { color: #6b4430; }
+
+/* Confirmación: prolonga el fondo de la ficha y da más espacio al resumen. */
+body.cs-order-received-page main.container.section { padding: 28px 0 56px; }
+body.cs-order-received-page .section-tight { padding: 34px 0 52px; }
+body.cs-order-received-page .confirm-wrap {
+  max-width: 860px;
+  border-color: rgba(234, 223, 211, .88);
+  border-radius: 16px;
+  background: rgba(255, 253, 250, .92);
+  box-shadow: 0 18px 46px rgba(77, 58, 41, .12);
+}
+body.cs-order-received-page .confirm-icon {
+  background: linear-gradient(135deg, #b77957, #8b5d3c);
+  box-shadow: 0 10px 24px rgba(139, 93, 60, .22);
+}
+body.cs-order-received-page .summary-card {
+  border-color: #eadfd3;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+body.cs-order-received-page .summary-card span { color: #887464; }
+body.cs-order-received-page .summary-card strong { color: #573d2e; }
+body.cs-order-received-page .confirm-wrap .cs-detalles .os-list {
+  padding: 6px 20px;
+  border: 1px solid #eadfd3;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+body.cs-order-received-page .confirm-wrap .tip-box {
+  border-left-color: #a96849;
+  background: #f7eee5;
+}
+body.cs-order-received-page .confirm-wrap .cs-detalles .os-item {
+  border-bottom-color: #eee3d8;
+}
+body.cs-order-received-page .confirm-wrap .cs-detalles .os-item:last-child { border-bottom: 0; }
+
+/* Carrito: lleva los paneles existentes al mismo tratamiento de la ficha. */
+body.cs-cart-page .page-header .container {
+  padding-top: 30px;
+  padding-bottom: 30px;
+  border: 1px solid rgba(234, 223, 211, .8);
+  border-radius: 14px;
+  background: rgba(255, 253, 250, .74);
+  box-shadow: 0 10px 30px rgba(77, 58, 41, .06);
+}
+body.cs-cart-page .section-tight > .container {
+  padding-top: 26px;
+  padding-bottom: 26px;
+  border: 1px solid rgba(234, 223, 211, .82);
+  border-radius: 14px;
+  background: rgba(255, 253, 250, .72);
+  box-shadow: 0 12px 34px rgba(77, 58, 41, .07);
+}
+body.cs-cart-page .cart-panel,
+body.cs-cart-page .order-box,
+body.cs-cart-page .cart-empty {
+  border-color: #eadfd3;
+  border-radius: 13px;
+  background: rgba(255, 253, 250, .96);
+  box-shadow: 0 10px 28px rgba(77, 58, 41, .08);
+}
+body.cs-cart-page .cart-item { border-bottom-color: #eee3d8; }
+body.cs-cart-page .cart-thumb { background: #f5eee6; }
+body.cs-cart-page .cta-banner {
+  border-color: #eadfd3;
+  border-radius: 13px;
+  background: rgba(255, 253, 250, .82);
+  box-shadow: 0 10px 28px rgba(77, 58, 41, .07);
+}
+
+/* Páginas interiores: el mármol aparece como fondo común y sus secciones
+   conservan capas claras para mantener lectura y jerarquía. */
+body.cs-contact-editorial-page .cs-interior-hero,
+body.cs-philosophy-editorial-page .cs-interior-hero {
+  border-bottom-color: rgba(234, 223, 211, .8);
+  background: rgba(255, 253, 250, .66);
+}
+body.cs-contact-editorial-page .cs-contact-section,
+body.cs-philosophy-editorial-page .cs-philosophy-story {
+  background: rgba(255, 253, 250, .78);
+}
+body.cs-contact-editorial-page .cs-contact-test,
+body.cs-philosophy-editorial-page .cs-values-section {
+  border-color: rgba(234, 223, 211, .82);
+  background: rgba(245, 238, 230, .84);
+}
+body.cs-contact-editorial-page .cs-contact-visual,
+body.cs-philosophy-editorial-page .cs-philosophy-visual,
+body.cs-philosophy-editorial-page .cs-value-card {
+  border-color: #eadfd3;
+  box-shadow: 0 12px 30px rgba(77, 58, 41, .09);
+}
+body.cs-philosophy-editorial-page .cs-philosophy-quote {
+  background: linear-gradient(125deg, rgba(112, 75, 54, .96), rgba(87, 58, 46, .97));
+}
+
+/* El diagnóstico comparte el fondo, muy atenuado detrás del escáner y del
+   cuestionario para que la ilustración y las respuestas sigan destacando. */
+body.cs-diagnostic-page {
+  background-image:
+    linear-gradient(rgba(255, 253, 250, .68), rgba(255, 253, 250, .68)),
+    url('/img/producto-fondo.jpg');
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+body.cs-result-page,
+body.cs-legal-page {
+  background-image:
+    linear-gradient(rgba(255, 253, 250, .62), rgba(255, 253, 250, .62)),
+    url('/img/producto-fondo.jpg');
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+body.cs-result-page .rp-empty { background: rgba(255, 253, 250, .94); }
+body.cs-legal-page .page-header { background: rgba(255, 253, 250, .68); }
+body.cs-legal-page .cs-legal-toc { background: rgba(245, 238, 230, .9); }
+body.cs-legal-page .cs-legal-content { background: rgba(255, 253, 250, .94); }
+
+@media (max-width: 780px) {
+  body.cs-shop-page .page-header { padding: 30px 24px 26px; }
+  body.cs-shop-page .tienda-catalogo { padding: 14px; }
+  body.cs-checkout-page .section-tight > .container { padding: 18px 14px; }
+  body.cs-order-received-page main.container.section { padding: 18px 0 34px; }
+  body.cs-order-received-page .section-tight { padding: 20px 0 34px; }
+  body.cs-order-received-page .confirm-wrap { padding: 36px 24px; }
+  body.cs-cart-page .section-tight > .container { padding: 18px 14px; }
+  body.cs-cart-page .page-header .container { padding: 26px 20px; }
+}
+
+/* Si el producto no tiene miniaturas, elimina la columna lateral vacía. */
+.woocommerce .product .woocommerce-product-gallery:not(:has(ol.flex-control-thumbs li)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.woocommerce div.product .woocommerce-product-gallery:not(:has(ol.flex-control-thumbs li)) .woocommerce-product-gallery__wrapper {
+  grid-column: 1;
+}

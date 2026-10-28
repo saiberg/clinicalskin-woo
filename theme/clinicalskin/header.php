@@ -4,6 +4,40 @@
  * del sitio estático, sumando wp_head() para WooCommerce/plugins.
  */
 $p = cs_piezas();
+$cs_body_classes = array();
+if ( function_exists( 'is_product' ) && is_product() ) {
+	$cs_body_classes[] = 'cs-product-page';
+}
+if ( function_exists( 'is_cart' ) && is_cart() ) {
+	$cs_body_classes[] = 'cs-cart-page';
+}
+if (
+	( function_exists( 'is_shop' ) && is_shop() ) ||
+	( function_exists( 'is_product_category' ) && is_product_category() ) ||
+	( function_exists( 'is_product_tag' ) && is_product_tag() )
+) {
+	$cs_body_classes[] = 'cs-shop-page';
+}
+if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) {
+	$cs_body_classes[] = 'cs-order-received-page';
+} elseif ( function_exists( 'is_checkout' ) && is_checkout() ) {
+	$cs_body_classes[] = 'cs-checkout-page';
+}
+$cs_slug = function_exists( 'cs_slug' ) ? cs_slug() : '';
+if ( 'contacto' === $cs_slug ) {
+	$cs_body_classes[] = 'cs-contact-editorial-page';
+} elseif ( 'filosofia' === $cs_slug ) {
+	$cs_body_classes[] = 'cs-philosophy-editorial-page';
+}
+if ( in_array( $cs_slug, array( 'diagnostico', 'diagnostico-v2' ), true ) ) {
+	$cs_body_classes[] = 'cs-diagnostic-page';
+}
+if ( 'resultado' === $cs_slug ) {
+	$cs_body_classes[] = 'cs-result-page';
+}
+if ( in_array( $cs_slug, array( 'politica-privacidad', 'terminos' ), true ) ) {
+	$cs_body_classes[] = 'cs-legal-page';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -20,7 +54,7 @@ $p = cs_piezas();
 <?php echo $p['head']; ?>
 <?php endif; ?>
 </head>
-<body>
+<body<?php echo $cs_body_classes ? ' class="' . esc_attr( implode( ' ', $cs_body_classes ) ) . '"' : ''; ?>>
 <?php wp_body_open(); ?>
 
 <header class="site-header" data-site-header></header>

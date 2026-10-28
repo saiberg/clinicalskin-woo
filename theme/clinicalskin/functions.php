@@ -17,6 +17,66 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once get_theme_file_path( 'pagos.php' );
 require_once get_theme_file_path( 'envios.php' );
 
+/* Estado manual para indicar que el pedido ya fue despachado. */
+add_action(
+	'init',
+	function () {
+		register_post_status(
+			'wc-enviado',
+			array(
+				'label'                     => 'Enviado',
+				'public'                    => false,
+				'exclude_from_search'       => false,
+				'show_in_admin_all_list'    => true,
+				'show_in_admin_status_list' => true,
+				'label_count'               => _n_noop( 'Enviado <span class="count">(%s)</span>', 'Enviados <span class="count">(%s)</span>', 'woocommerce' ),
+			)
+		);
+	}
+);
+
+add_filter(
+	'woocommerce_register_shop_order_post_statuses',
+	function ( $statuses ) {
+		$statuses['wc-enviado'] = array(
+			'label'                     => 'Enviado',
+			'public'                    => false,
+			'exclude_from_search'       => false,
+			'show_in_admin_all_list'    => true,
+			'show_in_admin_status_list' => true,
+			'label_count'               => _n_noop( 'Enviado <span class="count">(%s)</span>', 'Enviados <span class="count">(%s)</span>', 'woocommerce' ),
+		);
+		return $statuses;
+	}
+);
+
+add_filter(
+	'wc_order_statuses',
+	function ( $statuses ) {
+		$statuses['wc-enviado'] = 'Enviado';
+		return $statuses;
+	}
+);
+
+/* Un pedido enviado sigue siendo un pedido pagado para WooCommerce. */
+add_filter(
+	'woocommerce_order_is_paid_statuses',
+	function ( $statuses ) {
+		$statuses[] = 'enviado';
+		return array_values( array_unique( $statuses ) );
+	}
+);
+
+/* Registra el correo que WooCommerce envía al cambiar manualmente a Enviado. */
+add_filter(
+	'woocommerce_email_classes',
+	function ( $emails ) {
+		require_once get_theme_file_path( 'includes/class-cs-email-order-sent.php' );
+		$emails['CS_Email_Order_Sent'] = new CS_Email_Order_Sent();
+		return $emails;
+	}
+);
+
 /** Slugs que maneja WooCommerce: nunca usar el HTML estático. */
 function cs_es_woo( $slug ) {
 	return in_array( $slug, array( 'shop', 'cart', 'checkout', 'my-account' ), true );
@@ -758,7 +818,7 @@ add_filter(
 add_filter(
 	'option_woocommerce_email_header_image',
 	function ( $imagen ) {
-		return home_url( '/img/logo-email.jpg' );
+		return home_url( '/img/email-header-clinicalskin.jpg' );
 	}
 );
 add_filter(
@@ -768,16 +828,162 @@ add_filter(
 	}
 );
 
-/* El footer del email conserva acciones de contacto reales, sin formulario ficticio. */
+/* Titulares y resumen en español, con una jerarquía editorial consistente. */
+add_filter( 'woocommerce_email_heading_customer_processing_order', function () { return '¡Gracias por tu pedido!'; } );
+add_filter( 'woocommerce_email_heading_customer_enviado_order', function () { return '¡Tu pedido va en camino!'; } );
+add_filter( 'woocommerce_email_heading_customer_completed_order', function () { return '¡Tu pedido fue entregado!'; } );
+add_filter(
+	'woocommerce_email_order_details_heading',
+	function ( $heading, $order, $email ) {
+		return cs_email_is_branded_order_email( $email ) ? '' : $heading;
+	},
+	10,
+	3
+);
+add_filter(
+	'woocommerce_email_display_order_number',
+	function ( $display, $order, $email ) {
+		return cs_email_is_branded_order_email( $email ) ? false : $display;
+	},
+	10,
+	3
+);
+
+function cs_email_is_branded_order_email( $email ) {
+	return is_object( $email ) && in_array(
+		$email->id,
+		array( 'customer_processing_order', 'customer_enviado_order', 'customer_completed_order' ),
+		true
+	);
+}
+
+/** Muestra hitos reales del pedido; “Enviado” se actualiza manualmente. */
+function cs_email_order_progress( $order, $sent_to_admin, $plain_text, $email ) {
+	if ( $sent_to_admin || ! ( $order instanceof WC_Order ) ) {
+		return;
+	}
+
+	$status = $order->get_status();
+	if ( in_array( $status, array( 'cancelled', 'failed', 'refunded' ), true ) ) {
+		return;
+	}
+
+	$steps = array( 'Pedido recibido', 'En proceso', 'Enviado', 'Entregado' );
+	$icons = array( 'bag', 'card', 'truck', 'home' );
+	$stage = array(
+		'pending'    => 1,
+		'on-hold'    => 1,
+		'processing' => 2,
+		'enviado'    => 3,
+		'completed' => 4,
+	);
+	$current = isset( $stage[ $status ] ) ? $stage[ $status ] : 1;
+
+	if ( $plain_text ) {
+		echo "\nSEGUIMIENTO DEL PEDIDO\n";
+		foreach ( $steps as $index => $label ) {
+			echo ( $index + 1 <= $current ? '[✓] ' : '[ ] ' ) . $label . ( $index < count( $steps ) - 1 ? '  >  ' : "\n" );
+		}
+		echo 'Estado actual: ' . $steps[ $current - 1 ] . "\n\n";
+		return;
+	}
+
+	$description = 3 === $current
+		? 'Tu pedido fue despachado. El estado se actualizará cuando confirmemos su entrega.'
+		: ( 4 === $current
+			? 'Tu pedido figura como entregado. ¡Esperamos que disfrutes tu compra!'
+			: ( 2 === $current
+				? 'Recibimos tu compra y ya estamos preparando cuidadosamente tu pedido.'
+				: 'Recibimos tu pedido. Te iremos contando cómo avanza.' ) );
+
+	echo '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px">';
+	echo '<tr>';
+	foreach ( $steps as $index => $label ) {
+		$step_number = $index + 1;
+		$reached     = $step_number <= $current;
+		$active      = $step_number === $current;
+		$label_color = $active ? '#65452f' : ( $reached ? '#78553c' : '#94877b' );
+		$badge       = home_url( '/img/email-icons/step-' . $icons[ $index ] . ( $reached ? '-active.png' : '-idle.png' ) );
+		echo '<td width="10%" align="center" valign="middle" style="width:10%;padding:0">';
+		echo '<img src="' . esc_url( $badge ) . '" width="52" height="52" alt="" style="display:block;width:52px;height:52px;max-width:52px;margin:0 auto;padding:0;border:0;outline:none;text-decoration:none" />';
+		echo '</td>';
+		if ( $step_number < count( $steps ) ) {
+			$line_color = $step_number < $current ? '#a96e4d' : '#eadfd3';
+			echo '<td width="20%" valign="middle" style="width:20%;padding:0"><div style="height:1px;margin-top:26px;background-color:' . esc_attr( $line_color ) . '"></div></td>';
+		}
+	}
+	echo '</tr><tr>';
+	foreach ( $steps as $index => $label ) {
+		$step_number = $index + 1;
+		$reached     = $step_number <= $current;
+		$active      = $step_number === $current;
+		$label_color = $active ? '#65452f' : ( $reached ? '#78553c' : '#94877b' );
+		echo '<td width="10%" align="center" valign="top" style="width:10%;padding:7px 0 0;color:' . esc_attr( $label_color ) . ';font-family:Arial,sans-serif;font-size:11px;line-height:14px;font-weight:' . ( $active ? 'bold' : 'normal' ) . '">' . esc_html( $label ) . '</td>';
+		if ( $step_number < count( $steps ) ) {
+			echo '<td width="20%" style="width:20%;padding:0"></td>';
+		}
+	}
+	echo '</tr><tr><td colspan="7" align="center" style="padding:12px 8px 0;color:#76675b;font-family:Arial,sans-serif;font-size:13px;line-height:1.55">' . esc_html( $description ) . '</td></tr></table>';
+}
+
+/** Encabezado del resumen, con número y fecha reales del pedido. */
+function cs_email_order_summary_open( $order ) {
+	if ( ! ( $order instanceof WC_Order ) ) {
+		return;
+	}
+	$GLOBALS['cs_email_branded_order_summary'] = true;
+	echo '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 0;border:1px solid #eadfd3;border-radius:10px;background:#fffdfa"><tr><td style="padding:16px 18px 8px">';
+	echo '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td width="58" valign="middle" style="width:58px;padding:0">';
+		echo '<img src="' . esc_url( home_url( '/img/email-icons/summary-document.png' ) ) . '" width="52" height="52" alt="" style="display:block;width:52px;height:52px;max-width:52px;margin:0;padding:0;border:0" />';
+	echo '</td><td valign="middle"><div style="color:#573627;font-family:Georgia,serif;font-size:22px;line-height:1.2;font-weight:bold">Resumen del pedido</div>';
+	echo '<div style="padding-top:4px;color:#76675b;font-family:Arial,sans-serif;font-size:13px;line-height:1.4">Pedido #' . esc_html( $order->get_order_number() ) . ' &nbsp;&middot;&nbsp; ' . esc_html( wc_format_datetime( $order->get_date_created() ) ) . '</div></td></tr></table>';
+	echo '</td></tr><tr><td style="padding:4px 16px 16px">';
+}
+
+/** Cierra el contenedor del resumen del pedido. */
+function cs_email_order_summary_close() {
+	echo '</td></tr></table>';
+	$GLOBALS['cs_email_branded_order_summary'] = false;
+}
+
+/* El método de pago queda fuera del resumen, como en la composición aprobada. */
+add_filter(
+	'woocommerce_get_order_item_totals',
+	function ( $totals, $order, $tax_display ) {
+		if ( ! empty( $GLOBALS['cs_email_branded_order_summary'] ) ) {
+			unset( $totals['payment_method'] );
+		}
+		return $totals;
+	},
+	20,
+	3
+);
+
+/** Banda breve de confianza, inspirada en la composición de referencia. */
+function cs_email_brand_trust_strip() {
+	$items = array(
+		array( 'trust-leaf.png', 'Dermocosmética<br>de confianza' ),
+		array( 'trust-advice.png', 'Asesoría personalizada<br>en tu rutina' ),
+		array( 'trust-shield.png', 'Pago seguro<br>con Webpay' ),
+		array( 'trust-package.png', 'Envíos a<br>todo Chile' ),
+	);
+	echo '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0 18px;border-top:1px solid #eadfd3;border-bottom:1px solid #eadfd3"><tr>';
+	foreach ( $items as $index => $item ) {
+		$divider = 0 === $index ? '' : 'border-left:1px solid #eadfd3;';
+		echo '<td width="25%" align="center" valign="top" style="width:25%;padding:14px 4px 16px;' . $divider . '">';
+		echo '<img src="' . esc_url( home_url( '/img/email-icons/' . $item[0] ) ) . '" width="48" height="48" alt="" style="display:block;width:48px;height:48px;max-width:48px;margin:0 auto;padding:0;border:0" />';
+		echo '<div style="padding-top:8px;color:#78695d;font-family:Arial,sans-serif;font-size:11px;line-height:14px">' . $item[1] . '</div></td>';
+	}
+	echo '</tr></table>';
+}
+
+/* Contacto visible y banda gráfica del pie, ambos reutilizables por los correos. */
 add_filter(
 	'woocommerce_email_footer_text',
 	function ( $texto ) {
 		$correo   = 'contacto@clinicalskin.cl';
 		$whatsapp = 'https://wa.me/56992412354';
-		return '<p>Gracias por elegir Clinical Skin. Estamos para acompañarte.</p>' .
-			'<p><a href="mailto:' . esc_attr( $correo ) . '">' . esc_html( $correo ) . '</a> · ' .
-			'<a href="' . esc_url( $whatsapp ) . '">Asesoría por WhatsApp</a></p>' .
-			'<p>Despacho a todo Chile · Pago seguro con Webpay</p>';
+		return '<p>Si tienes alguna duda sobre tu pedido, escríbenos a <a href="mailto:' . esc_attr( $correo ) . '">' . esc_html( $correo ) . '</a> o contáctanos por <a href="' . esc_url( $whatsapp ) . '">WhatsApp</a> &rarr;</p>';
 	}
 );
 
@@ -797,11 +1003,14 @@ add_filter(
 			#header_wrapper { padding: 14px 30px 22px !important; }
 			#header_wrapper h1 { color: #553c2d !important; font-family: Georgia, serif !important; font-size: 25px !important; font-weight: 500 !important; line-height: 1.3 !important; text-align: center !important; }
 			#body_content { background: #fffdfa !important; }
-			#body_content table td { padding: 20px 30px !important; }
+			#body_content_inner_cell { padding: 20px 30px !important; }
 			#body_content_inner { color: #5f5349 !important; font-family: Arial, sans-serif !important; font-size: 15px !important; line-height: 1.65 !important; }
 			#body_content_inner h2, #body_content_inner h3 { color: #553c2d !important; font-family: Georgia, serif !important; }
 			#body_content_inner h2 { font-size: 20px !important; }
 			#body_content_inner a { color: #945f3d !important; }
+			#body_content_inner .email-introduction { margin: 0 0 18px !important; color: #5f5349 !important; }
+			#body_content_inner .email-introduction p { margin-top: 0 !important; }
+			#body_content_inner .email-order-details-heading { margin: 24px 0 12px !important; color: #553c2d !important; font-family: Georgia, serif !important; font-size: 20px !important; }
 			#body_content_inner table.email-order-details { border: 1px solid #eadfd3 !important; border-collapse: separate !important; border-spacing: 0 !important; border-radius: 6px !important; overflow: hidden !important; }
 			#body_content_inner table.email-order-details .td { border: 0 !important; border-bottom: 1px solid #eee4d9 !important; color: #5b4d41 !important; background: #fffdfa !important; }
 			#body_content_inner table.email-order-details thead th.td { background: #f5ece2 !important; color: #543d2e !important; font-size: 12px !important; letter-spacing: .04em !important; text-transform: uppercase !important; }
@@ -811,11 +1020,66 @@ add_filter(
 			#body_content_inner table.email-order-details tr.order-totals-last td.td { background: #f3e7da !important; color: #4f392b !important; font-weight: 700 !important; }
 			#body_content_inner .email-order-item-thumbnail img { width: 56px !important; height: 56px !important; object-fit: cover !important; border-radius: 6px !important; }
 			#body_content_inner .email-order-item-meta { color: #76675b !important; font-size: 12px !important; }
+			#body_content_inner .address { border: 1px solid #eadfd3 !important; border-radius: 6px !important; background: #fcf8f3 !important; padding: 16px !important; }
+			#body_content_inner address { color: #5f5349 !important; font-style: normal !important; line-height: 1.6 !important; }
 			hr { border-top-color: #eadfd3 !important; opacity: .65 !important; }
 			#template_footer { border-top: 1px solid #eadfd3 !important; background: #f6f0e9 !important; }
 			#credit { color: #78695d !important; text-align: center !important; font-size: 12px !important; line-height: 1.6 !important; }
 			#credit a { color: #895b3b !important; }
 			.button { background-color: #8b5d3c !important; border-radius: 4px !important; color: #fffdfa !important; }
+		';
+		$fondo_email = esc_url_raw( home_url( '/img/producto-fondo.jpg' ) );
+		$css        .= '
+			#wrapper { width: 100% !important; max-width: 860px !important; }
+			#outer_wrapper td[width="860"] { width: 860px !important; max-width: 860px !important; }
+			#inner_wrapper, #template_container { width: 100% !important; max-width: 860px !important; }
+			body, #outer_wrapper { background-color: #f8f0e8 !important; }
+			#outer_wrapper { background-image: url("' . $fondo_email . '") !important; background-position: center top !important; background-repeat: no-repeat !important; background-size: cover !important; }
+			#inner_wrapper { background-color: transparent !important; }
+			#template_header_image { padding: 0 !important; background: #fbf5ef !important; }
+			#template_header_image p { margin: 0 !important; padding: 0 !important; }
+			#template_header_image img { display: block !important; width: 100% !important; max-width: 860px !important; height: auto !important; margin: 0 auto !important; }
+			#template_container { border: 1px solid #eadfd3 !important; border-radius: 0 !important; background: #fffdfa !important; }
+			#template_header { border: 0 !important; background: #fffdfa !important; }
+			#header_wrapper { padding: 22px 24px 8px !important; }
+			#header_wrapper h1 { margin: 0 !important; color: #573627 !important; font-family: Georgia, serif !important; font-size: 38px !important; font-weight: 500 !important; line-height: 1.15 !important; text-align: center !important; }
+			#body_content { background: #fffdfa !important; }
+			#body_content_inner_cell { padding: 14px 28px 24px !important; }
+			#body_content_inner { color: #51463f !important; font-family: Arial, sans-serif !important; font-size: 15px !important; line-height: 1.55 !important; }
+			#body_content_inner .email-brand-subtitle { margin: 0 0 14px !important; color: #927866 !important; font-family: Arial, sans-serif !important; font-size: 11px !important; letter-spacing: 4px !important; line-height: 1.5 !important; text-align: center !important; }
+			#body_content_inner .email-introduction { margin: 4px 0 20px !important; }
+			#body_content_inner .email-introduction p { margin-top: 0 !important; }
+			#body_content_inner table.email-order-details { border: 1px solid #eadfd3 !important; border-collapse: separate !important; border-spacing: 0 !important; border-radius: 7px !important; overflow: hidden !important; }
+			#body_content_inner table.email-order-details thead th.td { padding: 12px 10px !important; border-bottom: 1px solid #eadfd3 !important; background: #f8f1e8 !important; color: #876650 !important; font-size: 11px !important; font-weight: 500 !important; letter-spacing: 1px !important; text-transform: uppercase !important; }
+			#body_content_inner table.email-order-details tbody td.td { padding: 14px 10px !important; border-bottom: 1px solid #f0e8df !important; background: #fffdfa !important; }
+			#body_content_inner .email-order-item-thumbnail { width: 98px !important; }
+			#body_content_inner .email-order-item-thumbnail img { width: 88px !important; height: 88px !important; object-fit: contain !important; border-radius: 7px !important; background: #f7f0e8 !important; }
+			#body_content_inner table.email-order-details tr.order-totals th.td,
+			#body_content_inner table.email-order-details tr.order-totals td.td { padding: 10px !important; background: #fffdfa !important; }
+			#body_content_inner table.email-order-details tr.order-totals-last th.td,
+			#body_content_inner table.email-order-details tr.order-totals-last td.td { padding: 12px 10px !important; border: 1px solid #eadfd3 !important; background: #f7eee5 !important; color: #633e2c !important; font-family: Georgia, serif !important; font-size: 18px !important; }
+			#body_content_inner table#addresses { border-collapse: separate !important; border-spacing: 8px 0 !important; }
+			#body_content_inner #addresses .cs-address-column { padding: 0 5px !important; vertical-align: top !important; }
+			#body_content_inner .cs-shipping-address { color: #66574c !important; font-style: normal !important; line-height: 1.55 !important; }
+			#template_footer { padding: 0 !important; border: 0 !important; background: transparent !important; }
+			#template_footer > tbody > tr > td { padding: 0 !important; }
+			#template_footer table { margin: 0 !important; }
+			#template_footer table td { padding: 0 !important; }
+			#template_footer #credit { padding: 14px 18px 12px !important; color: #78695d !important; background: #fffdfa !important; font-size: 13px !important; line-height: 1.55 !important; text-align: center !important; }
+			#template_footer #credit p { margin: 0 !important; }
+			#template_footer img { display: block !important; width: 100% !important; max-width: 860px !important; height: auto !important; margin: 0 !important; }
+			@media screen and (max-width: 860px) {
+				#wrapper { max-width: 100% !important; }
+				#outer_wrapper td[width="860"] { width: 100% !important; max-width: 100% !important; }
+			}
+			@media screen and (max-width: 600px) {
+				#body_content_inner_cell { padding: 12px 14px 20px !important; }
+				#header_wrapper { padding: 18px 14px 6px !important; }
+				#header_wrapper h1 { font-size: 26px !important; }
+				#body_content_inner .email-brand-subtitle { letter-spacing: 2px !important; }
+				#body_content_inner table#addresses { border-spacing: 0 10px !important; }
+				#body_content_inner #addresses .cs-address-column { display: block !important; width: 100% !important; padding: 0 0 10px !important; }
+			}
 		';
 		return $css;
 	},
