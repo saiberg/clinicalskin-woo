@@ -9,3 +9,6 @@ salida/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Respaldos puntuales por fase (copias de archivos fuente).
+parches/backup-*/

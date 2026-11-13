@@ -581,14 +581,20 @@ add_action(
 			true
 		);
 		$productos = array();
+		$por_sku   = array();
 		foreach ( wc_get_products( array( 'limit' => -1, 'return' => 'objects' ) ) as $producto ) {
 			$productos[ $producto->get_name() ] = $producto->get_id();
+			$sku = $producto->get_sku();
+			if ( $sku ) {
+				$por_sku[ $sku ] = $producto->get_id();
+			}
 		}
 		wp_add_inline_script(
 			'cs-puente-diagnostico',
 			'window.__csDiagnosticoWoo = ' . wp_json_encode(
 				array(
 					'productos' => $productos,
+					'porSku'    => $por_sku,
 					'carrito'   => wc_get_cart_url(),
 				)
 			) . ';',
@@ -1086,3 +1092,140 @@ add_filter(
 	20,
 	1
 );
+
+/* ==================== Catálogo del diagnóstico (endpoint AJAX) ==================== */
+
+/*
+ * El test (js/logica.js) necesita precios, fotos y stock reales de
+ * WooCommerce, más los atributos cosméticos que se asignaron en la
+ * Fase 1 (pa_paso, pa_tipo-de-piel, pa_preocupacion, pa_intensidad,
+ * pa_frecuencia) y los metadatos de texto (cs_porque, cs_ficha...).
+ *
+ * Este endpoint devuelve todo eso en JSON. El frontend lo cachea en
+ * localStorage (TTL corto) para no golpear el servidor en cada carga.
+ * Solo datos públicos: nada de datos personales ni de clientes.
+ */
+
+/** Carga el módulo cliente del catálogo en las páginas del test.
+ *  Se imprime desde footer.php (antes de los scripts estáticos) para que
+ *  logica.js y resultado-pro.js lo encuentren al calcular la rutina. */
+add_action(
+	'wp_enqueue_scripts',
+	function () {
+		/* El script se imprime en footer.php; aquí solo se registra la
+		   dependencia lógica para otras páginas que lo necesiten. */
+	}
+);
+
+/** Nombres de los términos de un atributo del producto (por taxonomía). */
+function cs_catalogo_terminos( $producto, $taxonomia ) {
+	$nombres = array();
+	$attrs   = $producto->get_attributes();
+	if ( isset( $attrs[ $taxonomia ] ) && $attrs[ $taxonomia ]->is_taxonomy() ) {
+		foreach ( $attrs[ $taxonomia ]->get_terms() as $term ) {
+			$nombres[] = $term->name;
+		}
+	}
+	return $nombres;
+}
+
+/** Slug de los términos (para comparar con los enums del JS). */
+function cs_catalogo_slugs( $producto, $taxonomia ) {
+	$slugs = array();
+	$attrs = $producto->get_attributes();
+	if ( isset( $attrs[ $taxonomia ] ) && $attrs[ $taxonomia ]->is_taxonomy() ) {
+		foreach ( $attrs[ $taxonomia ]->get_terms() as $term ) {
+			$slugs[] = $term->slug;
+		}
+	}
+	return $slugs;
+}
+
+/** Un producto en el formato que consume el test. */
+function cs_catalogo_producto( $producto ) {
+	$img_id  = $producto->get_image_id();
+	$img_url = $img_id ? wp_get_attachment_image_url( $img_id, 'woocommerce_thumbnail' ) : wc_placeholder_img_src( 'woocommerce_thumbnail' );
+
+	$categorias = array();
+	foreach ( $producto->get_category_ids() as $cat_id ) {
+		$term = get_term( $cat_id, 'product_cat' );
+		if ( $term && ! is_wp_error( $term ) ) {
+			$categorias[] = $term->name;
+		}
+	}
+
+	$stock_cantidad = $producto->get_stock_quantity();
+	$en_stock       = $producto->is_in_stock();
+
+	$paso          = cs_catalogo_slugs( $producto, 'pa_paso' );
+	$tipos         = cs_catalogo_slugs( $producto, 'pa_tipo-de-piel' );
+	$preocupaciones = cs_catalogo_slugs( $producto, 'pa_preocupacion' );
+	$intensidad    = cs_catalogo_slugs( $producto, 'pa_intensidad' );
+	$frecuencia    = cs_catalogo_slugs( $producto, 'pa_frecuencia' );
+
+	return array(
+		'id'             => $producto->get_sku() ? $producto->get_sku() : (string) $producto->get_id(),
+		'product_id'     => $producto->get_id(),
+		'sku'            => $producto->get_sku(),
+		'nombre'         => $producto->get_name(),
+		'precio'         => (float) $producto->get_price(),
+		'precio_regular' => (float) $producto->get_regular_price(),
+		'precio_html'    => $producto->get_price_html(),
+		'img'            => $img_url,
+		'url'            => get_permalink( $producto->get_id() ),
+		'stock'          => array(
+			'cantidad' => is_numeric( $stock_cantidad ) ? (int) $stock_cantidad : null,
+			'en_stock' => $en_stock,
+		),
+		'categorias'     => $categorias,
+		'paso'           => $paso ? $paso[0] : '',
+		'tipos'          => $tipos,
+		'preocupaciones' => $preocupaciones,
+		'intensidad'     => $intensidad ? $intensidad[0] : '',
+		'frecuencia'     => $frecuencia ? $frecuencia[0] : '',
+		'desc'           => (string) get_post_meta( $producto->get_id(), 'cs_desc', true ),
+		'porque'         => (string) get_post_meta( $producto->get_id(), 'cs_porque', true ),
+		'ficha'          => (string) get_post_meta( $producto->get_id(), 'cs_ficha', true ),
+		'modo_uso'       => (string) get_post_meta( $producto->get_id(), 'cs_modo_uso', true ),
+		'ingredientes'   => (string) get_post_meta( $producto->get_id(), 'cs_ingredientes', true ),
+	);
+}
+
+/** Respuesta del endpoint: catálogo completo + versión para cache. */
+function cs_catalogo_respuesta() {
+	if ( ! function_exists( 'wc_get_products' ) ) {
+		wp_send_json( array( 'ok' => false, 'productos' => array() ) );
+	}
+
+	$ids = wc_get_products(
+		array(
+			'limit'  => -1,
+			'return' => 'ids',
+			'status' => array( 'publish' ),
+		)
+	);
+
+	$productos = array();
+	foreach ( $ids as $id ) {
+		$producto = wc_get_product( $id );
+		if ( ! $producto ) {
+			continue;
+		}
+		$productos[] = cs_catalogo_producto( $producto );
+	}
+
+	wp_send_json(
+		array(
+			'ok'        => true,
+			'version'   => (int) filemtime( get_theme_file_path( 'functions.php' ) ),
+			'generado'  => time(),
+			'total'     => count( $productos ),
+			'productos' => $productos,
+		)
+	);
+}
+
+/* AJAX para usuarios logueados y para visitantes anónimos. */
+add_action( 'wc_ajax_cs_catalogo', 'cs_catalogo_respuesta' );
+add_action( 'wp_ajax_cs_catalogo', 'cs_catalogo_respuesta' );
+add_action( 'wp_ajax_nopriv_cs_catalogo', 'cs_catalogo_respuesta' );

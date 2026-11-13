@@ -7,13 +7,13 @@
    mismo botón para meter los productos en la bolsa real y llevar a
    /cart/, que es donde se paga.
 
-   Dos marcas de botón, porque el resultado cambió de diseño:
+   Marcas de botón soportadas:
    - [data-rp-add]      → "Añadir rutina al carrito" (resultado-pro.js)
    - [data-add-routine] → "Añadir rutina completa"  (compra.js, versión anterior)
 
-   Los nombres salen del listado activo: .rp-card (las que el usuario
-   desmarcó quedan en .off y no se compran) o, si no existe, del
-   listado viejo .routine-block .products-grid.
+   Fase 6: las tarjetas llevan data-sku y data-product-id (más robusto que
+   leer el nombre del <h3>). Si no existen, se cae al mapa nombre → id.
+   Los productos agotados (.rp-card.agotado) NUNCA se añaden al carrito.
 
    Se engancha en la fase de captura sobre document, así que se
    registra antes que js/compra.js / js/resultado-pro.js y sus
@@ -27,17 +27,32 @@
 
   const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
-  const nombresDeLaRutina = () => {
-    const nuevo = document.querySelectorAll('.rp-card:not(.off) h3');
-    const fuente = nuevo.length ? nuevo : document.querySelectorAll('.routine-block .products-grid h3');
-    return Array.from(fuente).map((h) => h.textContent.trim());
-  };
-
   /* id → nombre del catálogo, para comparar con lo que devuelve la bolsa */
   const nombreDe = {};
   Object.keys(datos.productos).forEach((n) => {
     nombreDe[datos.productos[n]] = n;
   });
+
+  /* Mapa SKU → product_id (inyectado por functions.php). */
+  const idDeSku = datos.porSku || {};
+
+  /* Tarjetas activas (no desmarcadas y no agotadas). */
+  const tarjetasDeLaRutina = () => {
+    const nuevo = document.querySelectorAll('.rp-card:not(.off):not(.agotado)');
+    if (nuevo.length) return Array.from(nuevo);
+    return Array.from(document.querySelectorAll('.routine-block .products-grid .product-card'));
+  };
+
+  /* Resuelve el product_id de una tarjeta: data-product-id > data-sku > nombre. */
+  const idDeTarjeta = (card) => {
+    const pid = card.getAttribute('data-product-id');
+    if (pid) return parseInt(pid, 10) || 0;
+    const sku = card.getAttribute('data-sku');
+    if (sku && idDeSku[sku]) return parseInt(idDeSku[sku], 10) || 0;
+    const h3 = card.querySelector('h3');
+    const nombre = h3 ? h3.textContent.trim() : '';
+    return nombre ? (datos.productos[nombre] || 0) : 0;
+  };
 
   const alta = async (id) => {
     try {
@@ -82,8 +97,8 @@
       ev.preventDefault();
       ev.stopPropagation();
 
-      /* Mismos productos que calcula el sitio estático para ese botón */
-      const ids = [...new Set(nombresDeLaRutina().map((n) => datos.productos[n] || 0).filter(Boolean))];
+      /* Ids reales de las tarjetas activas (agotadas y desmarcadas quedan fuera). */
+      const ids = [...new Set(tarjetasDeLaRutina().map(idDeTarjeta).filter(Boolean))];
 
       if (!ids.length) {
         location.href = datos.carrito;

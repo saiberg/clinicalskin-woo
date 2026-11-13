@@ -7,6 +7,17 @@ $p = cs_piezas();
 ?>
 <?php echo $p['footer']; ?>
 <?php
+/* Catálogo en tiempo real (endpoint cs_catalogo): debe cargarse ANTES que
+   logica.js/resultado-pro.js para que el motor pueda sincronizar los datos
+   reales de WooCommerce al calcular la rutina. */
+if ( in_array( 'logica.js', (array) $p['scripts'], true ) ) {
+	$ruta_cat = get_theme_file_path( 'js/catalogo.js' );
+	if ( is_readable( $ruta_cat ) ) {
+		?>
+<script src="<?php echo esc_url( get_theme_file_uri( 'js/catalogo.js' ) ); ?>?ver=<?php echo (int) filemtime( $ruta_cat ); ?>"></script>
+		<?php
+	}
+}
 /* Consulta de versión por archivo: sin ella el navegador puede servir una
    copia vieja de main.js/footer.js y los cambios no se ven. */
 $cs_scripts = (array) $p['scripts'];
