@@ -1736,3 +1736,123 @@ body.cs-legal-page .cs-legal-content { background: rgba(255, 253, 250, .94); }
 .woocommerce div.product .woocommerce-product-gallery:not(:has(ol.flex-control-thumbs li)) .woocommerce-product-gallery__wrapper {
   grid-column: 1;
 }
+
+/* ============================================================
+   Home: fondo floral/mármol (igual que el test virtual)
+   ============================================================ */
+body.cs-home-page {
+  background-image:
+    linear-gradient(rgba(255, 253, 250, .38), rgba(255, 253, 250, .38)),
+    url('/img/producto-fondo.jpg');
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+
+/* Home: velo muy suave para que el fondo floral se aprecie. */
+.cs-home-page .cs-concerns,
+.cs-home-page .cs-featured {
+  background: rgba(255, 253, 250, .18);
+}
+.cs-home-page .cs-brands-band { background: rgba(241, 230, 217, .38); }
+.cs-home-page .cs-advisory-band { background: rgba(245, 237, 228, .38); }
+/* Las tarjetas mantienen su superficie clara encima del fondo floral. */
+.cs-home-page .cs-need-card,
+.cs-home-page .cs-showcase-card,
+.cs-home-page .cs-brand-logo {
+  background-color: rgba(255, 253, 250, .9);
+}
+
+/* ============================================================
+   Botón "Añadir rutina al carrito": estado de carga
+   ============================================================ */
+.rp-buyactions .btn.is-loading,
+[data-rp-add].is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: .92;
+  padding-left: 42px;
+  background: linear-gradient(90deg, #8B6B45, #B88B4A, #8B6B45);
+  background-size: 200% 100%;
+  animation: rpBtnShimmer 1.6s linear infinite;
+  box-shadow: 0 0 0 0 rgba(184,139,74,.55);
+}
+.rp-buyactions .btn.is-loading::before,
+[data-rp-add].is-loading::before {
+  content: '';
+  position: absolute;
+  left: 16px; top: 50%;
+  width: 16px; height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  animation: rpBtnSpin .7s linear infinite;
+}
+/* Pulso suave del borde mientras carga */
+.rp-buyactions .btn.is-loading,
+[data-rp-add].is-loading {
+  animation: rpBtnShimmer 1.6s linear infinite, rpBtnPulse 1.4s ease-out infinite;
+}
+@keyframes rpBtnShimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes rpBtnSpin { to { transform: rotate(360deg); } }
+@keyframes rpBtnPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(184,139,74,.5); }
+  70%  { box-shadow: 0 0 0 12px rgba(184,139,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(184,139,74,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-buyactions .btn.is-loading,
+  [data-rp-add].is-loading { animation: none; }
+  .rp-buyactions .btn.is-loading::before,
+  [data-rp-add].is-loading::before { animation-duration: 2s; }
+}
+
+/* ============================================================
+   Tarjeta de tienda: precio + "Ver" + "Añadir al carrito"
+   ============================================================ */
+.catalog-main ul.products li.product .product-footer {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.catalog-main ul.products li.product .product-footer .price {
+  flex: 0 0 100%;
+  margin-bottom: 2px;
+}
+.catalog-main ul.products li.product .product-footer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.catalog-main ul.products li.product .product-footer-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 9px 14px;
+  font-size: .8rem;
+}
+.catalog-main ul.products li.product .cs-add-to-cart {
+  position: relative;
+  transition: background .2s, transform .15s;
+}
+.catalog-main ul.products li.product .cs-add-to-cart.is-loading {
+  opacity: .85;
+  pointer-events: none;
+}
+.catalog-main ul.products li.product .cs-add-to-cart.is-added {
+  background: #4a7c59 !important;
+  border-color: #4a7c59 !important;
+  color: #fff !important;
+  transform: scale(1.02);
+}
+
+@media (max-width: 480px) {
+  .catalog-main ul.products li.product .product-footer-actions { flex-direction: column; }
+  .catalog-main ul.products li.product .product-footer-actions .btn { width: 100%; }
+}

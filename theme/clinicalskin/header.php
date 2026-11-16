@@ -24,6 +24,9 @@ if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) {
 	$cs_body_classes[] = 'cs-checkout-page';
 }
 $cs_slug = function_exists( 'cs_slug' ) ? cs_slug() : '';
+if ( 'inicio' === $cs_slug ) {
+	$cs_body_classes[] = 'cs-home-page';
+}
 if ( 'contacto' === $cs_slug ) {
 	$cs_body_classes[] = 'cs-contact-editorial-page';
 } elseif ( 'filosofia' === $cs_slug ) {
@@ -50,6 +53,28 @@ if ( in_array( $cs_slug, array( 'politica-privacidad', 'terminos' ), true ) ) {
 <?php $ver_css_diseno = @filemtime( ABSPATH . 'css/style.css' ) ?: (int) filemtime( __FILE__ ); ?>
 <link rel="stylesheet" href="css/style.css?ver=<?php echo (int) $ver_css_diseno; ?>&amp;rev=footer-anchor-2026-10-24">
 <link rel="stylesheet" href="<?php echo esc_url( add_query_arg( 'ver', (int) filemtime( get_theme_file_path( 'css/woo.css' ) ), get_theme_file_uri( 'css/woo.css' ) ) ); ?>">
+<?php
+/* CSS del test y del resultado: versión automática por fecha del archivo,
+   así el navegador recarga cada cambio sin tocar el HTML. */
+$cs_slug_css = function_exists( 'cs_slug' ) ? cs_slug() : '';
+$cs_css_test = array();
+if ( in_array( $cs_slug_css, array( 'diagnostico', 'diagnostico-v2', 'resultado' ), true ) ) {
+	$cs_css_test[] = 'diagnostico.css';
+}
+if ( 'resultado' === $cs_slug_css ) {
+	$cs_css_test[] = 'resultado.css';
+}
+foreach ( $cs_css_test as $cs_css ) {
+	$ruta_css = ABSPATH . 'css/' . $cs_css;
+	if ( ! is_readable( $ruta_css ) ) {
+		continue;
+	}
+	printf(
+		'<link rel="stylesheet" href="%s">' . "\n",
+		esc_url( add_query_arg( 'ver', (int) filemtime( $ruta_css ), home_url( '/css/' . $cs_css ) ) )
+	);
+}
+?>
 <?php if ( $p['head'] ) : ?>
 <?php echo $p['head']; ?>
 <?php endif; ?>

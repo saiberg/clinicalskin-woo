@@ -131,7 +131,7 @@ do_action( 'woocommerce_before_cart' );
 			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="btn btn-outline btn-block cs-seguir"><?php esc_html_e( 'Seguir comprando', 'clinicalskin' ); ?></a>
 
 			<div class="trust-row">
-				<span><?php esc_html_e( 'Pago seguro: Webpay · Khipu · Mercado Pago', 'clinicalskin' ); ?></span>
+				<span><?php esc_html_e( 'Pago seguro: Webpay', 'clinicalskin' ); ?></span>
 				<span><?php esc_html_e( 'Despacho a todo Chile', 'clinicalskin' ); ?></span>
 				<span><?php esc_html_e( 'Cambios y devoluciones 30 días', 'clinicalskin' ); ?></span>
 			</div>

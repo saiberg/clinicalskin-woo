@@ -56,14 +56,19 @@
 
   const alta = async (id) => {
     try {
-      await fetch('/?wc-ajax=add_to_cart', {
+      const r = await fetch('/?wc-ajax=add_to_cart', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body: 'product_id=' + id + '&quantity=1'
       });
+      const j = await r.json().catch(() => null);
+      /* Si WooCommerce rechaza el alta (agotado, no comprable…), no se reintenta. */
+      if (j && j.error) return false;
+      return true;
     } catch (e) {
       /* sin red: lo retoma la ronda de revisión */
+      return true;
     }
   };
 
@@ -106,17 +111,42 @@
       }
 
       btn.textContent = 'Añadiendo a tu bolsa…';
+      btn.classList.add('is-loading');
+      btn.setAttribute('aria-busy', 'true');
+      btn.disabled = true;
 
       (async () => {
-        let pendientes = ids;
+        /* Verifica el stock real antes de añadir: descarta agotados para no
+           mostrar mensajes de error de WooCommerce. */
+        let disponibles = ids;
+        try {
+          const r = await fetch('/?wc-ajax=cs_catalogo', { credentials: 'same-origin' });
+          const j = await r.json();
+          if (j && Array.isArray(j.productos)) {
+            const enStock = {};
+            j.productos.forEach((p) => { enStock[p.product_id] = p.stock && p.stock.en_stock !== false; });
+            disponibles = ids.filter((id) => enStock[id] !== false);
+          }
+        } catch (e) { /* sin endpoint: se intenta igual */ }
+
+        if (!disponibles.length) {
+          location.href = datos.carrito;
+          return;
+        }
+
+        let pendientes = disponibles;
+        const fallidos = new Set();
         for (let ronda = 0; ronda < 3 && pendientes.length; ronda++) {
           for (const id of pendientes) {
-            await alta(id);
+            const ok = await alta(id);
+            if (!ok) fallidos.add(id);
             await esperar(300);
           }
           const enBolsa = await nombresEnBolsa();
           if (!enBolsa) break;
           pendientes = pendientes.filter((id) => {
+            /* Los que WooCommerce rechazó (agotados) no se reintentan. */
+            if (fallidos.has(id)) return false;
             const nombre = nombreDe[id];
             /* sin nombre comparable no se vuelve a añadir (evita duplicar) */
             return nombre ? enBolsa.indexOf(nombre) === -1 : false;

@@ -340,6 +340,27 @@ if ( function_exists( 'is_shop' ) ) {
 	add_action( 'woocommerce_before_shop_loop_item_title', 'cs_tienda_etiquetas', 11 );
 	add_action( 'woocommerce_after_shop_loop_item_title', 'cs_tienda_descripcion', 8 );
 	add_action( 'woocommerce_after_shop_loop_item', 'cs_tienda_pie', 10 );
+
+	/* Botón "Añadir al carrito" de las tarjetas (AJAX, sin recargar). */
+	add_action(
+		'wp_enqueue_scripts',
+		function () {
+			if ( ! function_exists( 'is_shop' ) ) {
+				return;
+			}
+			if ( ! ( is_shop() || is_product_category() || is_product_tag() ) ) {
+				return;
+			}
+			$archivo = 'js/tienda-carrito.js';
+			wp_enqueue_script(
+				'cs-tienda-carrito',
+				get_theme_file_uri( $archivo ),
+				array(),
+				(int) filemtime( get_theme_file_path( $archivo ) ),
+				true
+			);
+		}
+	);
 }
 
 /**
@@ -388,7 +409,7 @@ function cs_tienda_descripcion() {
 	echo '<p class="desc">' . wp_kses_post( $texto ) . '</p>';
 }
 
-/** Pie de la tarjeta: precio a la izquierda y botón fantasma "Ver". */
+/** Pie de la tarjeta: precio a la izquierda y botones "Ver" + "Añadir al carrito". */
 function cs_tienda_pie() {
 	$producto = wc_get_product( get_the_ID() );
 	if ( ! $producto ) {
@@ -396,11 +417,24 @@ function cs_tienda_pie() {
 	}
 	echo '<div class="product-footer">';
 	echo '<span class="price">' . $producto->get_price_html() . '</span>';
+	echo '<div class="product-footer-actions">';
 	printf(
 		'<a href="%s" class="btn btn-ghost btn-sm">%s</a>',
 		esc_url( $producto->get_permalink() ),
 		esc_html__( 'Ver', 'clinicalskin' )
 	);
+	/* Solo si hay existencias y el producto se puede comprar. */
+	if ( $producto->is_in_stock() && $producto->is_purchasable() ) {
+		printf(
+			'<a href="%s" class="btn btn-primary btn-sm cs-add-to-cart" data-product-id="%d" data-product-type="%s" rel="nofollow" aria-label="%s">%s</a>',
+			esc_url( $producto->add_to_cart_url() ),
+			(int) $producto->get_id(),
+			esc_attr( $producto->get_type() ),
+			esc_attr( sprintf( __( 'Añadir %s al carrito', 'clinicalskin' ), $producto->get_name() ) ),
+			esc_html__( 'Añadir al carrito', 'clinicalskin' )
+		);
+	}
+	echo '</div>';
 	echo '</div>';
 }
 
@@ -988,7 +1022,7 @@ add_filter(
 	'woocommerce_email_footer_text',
 	function ( $texto ) {
 		$correo   = 'contacto@clinicalskin.cl';
-		$whatsapp = 'https://wa.me/56992412354';
+		$whatsapp = 'https://wa.me/56995786158';
 		return '<p>Si tienes alguna duda sobre tu pedido, escríbenos a <a href="mailto:' . esc_attr( $correo ) . '">' . esc_html( $correo ) . '</a> o contáctanos por <a href="' . esc_url( $whatsapp ) . '">WhatsApp</a> &rarr;</p>';
 	}
 );
